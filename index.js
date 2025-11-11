@@ -1,14 +1,14 @@
-const express = require('express')
-const app = express()
-require('dotenv').config()
+const express = require('express');
+const app = express();
+require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors')
+const cors = require('cors');
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
-const port = process.env.PORT || 3000
-const uri = process.env.MONGO_URI
+const port = process.env.PORT || 3000;
+const uri = process.env.MONGO_URI;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -49,32 +49,44 @@ async function run() {
     // ✅ POST Add a new book
     app.post('/books', async (req, res) => {
       const newBook = req.body;
-      const result = await booksCollection.insertOne(newBook);
-      res.send(result);
+      try {
+        const result = await booksCollection.insertOne(newBook);
+        res.send({ message: 'Book added successfully', id: result.insertedId });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to add book' });
+      }
     });
 
     // ✅ PUT Update book
     app.put('/books/:id', async (req, res) => {
       const id = req.params.id;
       const updatedData = req.body;
-
-      const result = await booksCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: updatedData }
-      );
-
-      res.send(result);
+      try {
+        const result = await booksCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+        res.send({ message: 'Book updated successfully', modifiedCount: result.modifiedCount });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to update book' });
+      }
     });
 
     // ✅ DELETE book
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
-
-      const result = await booksCollection.deleteOne({
-        _id: new ObjectId(id)
-      });
-
-      res.send(result);
+      try {
+        const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ message: 'Book not found' });
+        }
+        res.send({ message: 'Book deleted successfully' });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to delete book' });
+      }
     });
 
   } catch (err) {

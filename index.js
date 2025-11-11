@@ -31,6 +31,21 @@ async function run() {
       res.send(books);
     });
 
+    // ✅ GET a single book by ID
+    app.get('/books/:id', async (req, res) => {
+      const id = req.params.id;
+      try {
+        const book = await booksCollection.findOne({ _id: new ObjectId(id) });
+        if (!book) {
+          return res.status(404).send({ message: 'Book not found' });
+        }
+        res.send(book);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Server error' });
+      }
+    });
+
     // ✅ POST Add a new book
     app.post('/books', async (req, res) => {
       const newBook = req.body;

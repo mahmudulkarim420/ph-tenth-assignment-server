@@ -1,4 +1,5 @@
 const express = require('express');
+const serverless = require('serverless-http'); // add this
 const app = express();
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -7,7 +8,6 @@ const cors = require('cors');
 app.use(cors());
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
 const uri = process.env.MONGO_URI;
 
 const client = new MongoClient(uri, {
@@ -25,20 +25,18 @@ async function run() {
 
     const booksCollection = client.db("books_haven").collection("Books");
 
-    // ✅ GET all books
+    // GET all books
     app.get('/books', async (req, res) => {
       const books = await booksCollection.find().toArray();
       res.send(books);
     });
 
-    // ✅ GET a single book by ID
+    // GET single book
     app.get('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
         const book = await booksCollection.findOne({ _id: new ObjectId(id) });
-        if (!book) {
-          return res.status(404).send({ message: 'Book not found' });
-        }
+        if (!book) return res.status(404).send({ message: 'Book not found' });
         res.send(book);
       } catch (err) {
         console.error(err);
@@ -46,7 +44,7 @@ async function run() {
       }
     });
 
-    // ✅ POST Add a new book
+    // POST add book
     app.post('/books', async (req, res) => {
       const newBook = req.body;
       try {
@@ -58,7 +56,7 @@ async function run() {
       }
     });
 
-    // ✅ PUT Update book
+    // PUT update book
     app.put('/books/:id', async (req, res) => {
       const id = req.params.id;
       const updatedData = req.body;
@@ -74,14 +72,12 @@ async function run() {
       }
     });
 
-    // ✅ DELETE book
+    // DELETE book
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
         const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
-        if (result.deletedCount === 0) {
-          return res.status(404).send({ message: 'Book not found' });
-        }
+        if (result.deletedCount === 0) return res.status(404).send({ message: 'Book not found' });
         res.send({ message: 'Book deleted successfully' });
       } catch (err) {
         console.error(err);
@@ -95,11 +91,13 @@ async function run() {
 }
 run().catch(console.dir);
 
-// ✅ Test Route
+// Test route
 app.get('/', (req, res) => {
   res.send('Books Haven API Running ✅')
 })
 
-app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`)
-})
+// ❌ Remove app.listen
+// app.listen(port, () => console.log(`Server running on port ${port}`))
+
+// ✅ Export serverless handler for Vercel
+module.exports.handler = serverless(app);

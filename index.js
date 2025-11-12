@@ -15,30 +15,36 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
   try {
-    // await client.connect();
+    await client.connect();
     console.log("✅ MongoDB Connected");
 
-    const booksCollection = client.db("books_haven").collection("Books");
+    const db = client.db("books_haven");
+    const booksCollection = db.collection("Books");
+    const commentsCollection = db.collection("Comments");
 
-    // ✅ GET all books
+    // ---------------- BOOKS ROUTES ----------------
+    // GET all books
     app.get('/books', async (req, res) => {
-      const books = await booksCollection.find().toArray();
-      res.send(books);
+      try {
+        const books = await booksCollection.find().toArray();
+        res.send(books);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to fetch books' });
+      }
     });
 
-    // ✅ GET a single book by ID
+    // GET single book
     app.get('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
         const book = await booksCollection.findOne({ _id: new ObjectId(id) });
-        if (!book) {
-          return res.status(404).send({ message: 'Book not found' });
-        }
+        if (!book) return res.status(404).send({ message: 'Book not found' });
         res.send(book);
       } catch (err) {
         console.error(err);
@@ -46,19 +52,22 @@ async function run() {
       }
     });
 
-    // ✅ POST Add a new book
+    // POST add new book
     app.post('/books', async (req, res) => {
       const newBook = req.body;
+      if (!newBook.title || !newBook.author) {
+        return res.status(400).send({ message: 'Title and Author required' });
+      }
       try {
         const result = await booksCollection.insertOne(newBook);
-        res.send({ message: 'Book added successfully', id: result.insertedId });
+        res.send({ message: 'Book added', id: result.insertedId });
       } catch (err) {
         console.error(err);
         res.status(500).send({ message: 'Failed to add book' });
       }
     });
 
-    // ✅ PUT Update book
+    // PUT update book
     app.put('/books/:id', async (req, res) => {
       const id = req.params.id;
       const updatedData = req.body;
@@ -67,39 +76,70 @@ async function run() {
           { _id: new ObjectId(id) },
           { $set: updatedData }
         );
-        res.send({ message: 'Book updated successfully', modifiedCount: result.modifiedCount });
+        res.send({ message: 'Book updated', modifiedCount: result.modifiedCount });
       } catch (err) {
         console.error(err);
         res.status(500).send({ message: 'Failed to update book' });
       }
     });
 
-    // ✅ DELETE book
+    // DELETE book
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
         const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
-        if (result.deletedCount === 0) {
-          return res.status(404).send({ message: 'Book not found' });
-        }
-        res.send({ message: 'Book deleted successfully' });
+        if (result.deletedCount === 0) return res.status(404).send({ message: 'Book not found' });
+        res.send({ message: 'Book deleted' });
       } catch (err) {
         console.error(err);
         res.status(500).send({ message: 'Failed to delete book' });
       }
     });
 
+    // ---------------- COMMENTS ROUTES ----------------
+    // GET comments by bookId
+    app.get('/comments/:bookId', async (req, res) => {
+      const { bookId } = req.params;
+      try {
+        const comments = await commentsCollection
+          .find({ bookId })
+          .sort({ createdAt: -1 }) // newest first
+          .toArray();
+        res.send(comments);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to fetch comments' });
+      }
+    });
+
+    // POST add a comment
+    app.post('/comments', async (req, res) => {
+      const commentData = req.body;
+      if (!commentData.bookId || !commentData.comment) {
+        return res.status(400).send({ message: 'BookId and comment are required' });
+      }
+      commentData.createdAt = new Date();
+      try {
+        const result = await commentsCollection.insertOne(commentData);
+        res.send({ message: 'Comment added', insertedId: result.insertedId });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to add comment' });
+      }
+    });
+
+    console.log("✅ API Routes are ready");
   } catch (err) {
-    console.error(err);
+    console.error("MongoDB Connection Error:", err);
   }
 }
 run().catch(console.dir);
 
-
+// Root
 app.get('/', (req, res) => {
-  res.send('Books Haven API Running ✅')
-})
+  res.send('Books Haven API Running ✅');
+});
 
 app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`)
-})
+  console.log(`✅ Server running on port ${port}`);
+});

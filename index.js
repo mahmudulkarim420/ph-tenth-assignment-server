@@ -20,7 +20,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("✅ MongoDB Connected");
 
     const booksCollection = client.db("books_haven").collection("Books");
@@ -95,7 +95,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-// ✅ Test Route
+
 app.get('/', (req, res) => {
   res.send('Books Haven API Running ✅')
 })

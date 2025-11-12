@@ -96,15 +96,9 @@ async function run() {
       }
     });
 
-    // ---------------- COMMENTS ROUTES ----------------
-    // GET comments by bookId
-    app.get('/comments/:bookId', async (req, res) => {
-      const { bookId } = req.params;
+    app.get('/comments', async (req, res) => {
       try {
-        const comments = await commentsCollection
-          .find({ bookId })
-          .sort({ createdAt: -1 }) // newest first
-          .toArray();
+        const comments = await commentsCollection.find().toArray();
         res.send(comments);
       } catch (err) {
         console.error(err);
@@ -112,22 +106,23 @@ async function run() {
       }
     });
 
-    // POST add a comment
-    app.post('/comments', async (req, res) => {
-      const commentData = req.body;
-      if (!commentData.bookId || !commentData.comment) {
-        return res.status(400).send({ message: 'BookId and comment are required' });
-      }
-      commentData.createdAt = new Date();
+
+    // ---------------- COMMENTS ROUTES ----------------
+    // GET comments by bookId
+    app.get('/comments/:id', async (req, res) => {
+      const id = req.params.id;
       try {
-        const result = await commentsCollection.insertOne(commentData);
-        res.send({ message: 'Comment added', insertedId: result.insertedId });
+        const comment = await booksCollection.findOne({ _id: new ObjectId(id) });
+        if (!comment) return res.status(404).send({ message: 'Book not found' });
+        res.send(comment);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: 'Failed to add comment' });
+        res.status(500).send({ message: 'Server error' });
       }
     });
 
+    // POST add a comment
+    
     console.log("✅ API Routes are ready");
   } catch (err) {
     console.error("MongoDB Connection Error:", err);

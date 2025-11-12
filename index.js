@@ -28,7 +28,7 @@ async function connectToDatabase() {
   return { client, db };
 }
 
-// ✅ Routes
+
 
 // Test route
 app.get('/', (req, res) => {

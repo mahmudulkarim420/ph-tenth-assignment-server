@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ObjectId, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 
 app.use(cors());
@@ -27,8 +27,7 @@ async function run() {
     const booksCollection = db.collection("Books");
     const commentsCollection = db.collection("Comments");
 
-    // ---------------- BOOKS ROUTES ----------------
-    // GET all books
+    // ========== Books ==========
     app.get('/books', async (req, res) => {
       try {
         const books = await booksCollection.find().toArray();
@@ -39,7 +38,6 @@ async function run() {
       }
     });
 
-    // GET single book
     app.get('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
@@ -52,53 +50,34 @@ async function run() {
       }
     });
 
-    // POST add new book
-    app.post('/books', async (req, res) => {
-      const newBook = req.body;
-      if (!newBook.title || !newBook.author) {
-        return res.status(400).send({ message: 'Title and Author required' });
-      }
+        app.post('/comments', async (req, res) => {
+      const { bookId, userName, photoURL, comment } = req.body;
+      if (!bookId || !comment) return res.status(400).send({ message: 'Book ID and comment required' });
+
       try {
-        const result = await booksCollection.insertOne(newBook);
-        res.send({ message: 'Book added', id: result.insertedId });
+        const result = await commentsCollection.insertOne({
+          bookId,
+          userName,
+          photoURL,
+          comment,
+          createdAt: new Date(),
+        });
+        res.send({ message: 'Comment added', id: result.insertedId });
       } catch (err) {
         console.error(err);
-        res.status(500).send({ message: 'Failed to add book' });
+        res.status(500).send({ message: 'Failed to add comment' });
       }
     });
 
-    // PUT update book
-    app.put('/books/:id', async (req, res) => {
-      const id = req.params.id;
-      const updatedData = req.body;
-      try {
-        const result = await booksCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: updatedData }
-        );
-        res.send({ message: 'Book updated', modifiedCount: result.modifiedCount });
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({ message: 'Failed to update book' });
-      }
-    });
 
-    // DELETE book
-    app.delete('/books/:id', async (req, res) => {
-      const id = req.params.id;
+    // ========== Comments ==========
+    app.get('/comments/:bookId', async (req, res) => {
+      const { bookId } = req.params;
       try {
-        const result = await booksCollection.deleteOne({ _id: new ObjectId(id) });
-        if (result.deletedCount === 0) return res.status(404).send({ message: 'Book not found' });
-        res.send({ message: 'Book deleted' });
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({ message: 'Failed to delete book' });
-      }
-    });
-
-    app.get('/comments', async (req, res) => {
-      try {
-        const comments = await commentsCollection.find().toArray();
+        const comments = await commentsCollection
+          .find({ bookId })
+          .sort({ createdAt: -1 })
+          .toArray();
         res.send(comments);
       } catch (err) {
         console.error(err);
@@ -107,34 +86,13 @@ async function run() {
     });
 
 
-    // ---------------- COMMENTS ROUTES ----------------
-    // GET comments by bookId
-    app.get('/comments/:id', async (req, res) => {
-      const id = req.params.id;
-      try {
-        const comment = await booksCollection.findOne({ _id: new ObjectId(id) });
-        if (!comment) return res.status(404).send({ message: 'Book not found' });
-        res.send(comment);
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({ message: 'Server error' });
-      }
-    });
-
-    // POST add a comment
-    
-    console.log("✅ API Routes are ready");
+    console.log("✅ API Routes ready");
   } catch (err) {
     console.error("MongoDB Connection Error:", err);
   }
 }
 run().catch(console.dir);
 
-// Root
-app.get('/', (req, res) => {
-  res.send('Books Haven API Running ✅');
-});
+app.get('/', (req, res) => res.send('Books Haven API Running ✅'));
 
-app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
-});
+app.listen(port, () => console.log(`✅ Server running on port ${port}`));

@@ -109,26 +109,27 @@ async function run() {
         });
 
         // PUT update book
-        app.put('/books/:id', async (req, res) => {
-            const id = req.params.id;
-            const updatedData = req.body;
-            try {
-                if (!ObjectId.isValid(id)) {
-                    return res.status(400).send({ message: 'Invalid Book ID format' });
-                }
-                const result = await booksCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: updatedData }
-                );
-                if (result.matchedCount === 0) {
-                    return res.status(404).send({ message: 'Book not found for update' });
-                }
-                res.send({ message: 'Book updated', modifiedCount: result.modifiedCount });
-            } catch (err) {
-                console.error(err);
-                res.status(500).send({ message: 'Failed to update book' });
-            }
-        });
+       // PUT update book
+app.put('/books/:id', async (req, res) => {
+    const id = req.params.id;
+    const updatedData = req.body;
+    try {
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).send({ message: 'Invalid Book ID format' });
+        }
+        const result = await booksCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updatedData }
+        );
+        if (result.matchedCount === 0) {
+            return res.status(404).send({ message: 'Book not found for update' });
+        }
+        res.send({ message: 'Book updated', modifiedCount: result.modifiedCount });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: 'Failed to update book' });
+    }
+});
 
         // DELETE book
         app.delete('/books/:id', async (req, res) => {

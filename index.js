@@ -4,12 +4,12 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 
-// Middleware
+
 app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
-// NOTE: Make sure your MONGO_URI is correctly set in your .env file
+
 const uri = process.env.MONGO_URI;
 
 if (!uri) {
@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // ✨ THE CRITICAL FIX: Ensure the MongoDB client connects before defining routes.
+
     await client.connect();
     console.log("✅ MongoDB Connected");
 
@@ -34,19 +34,19 @@ async function run() {
     const booksCollection = db.collection("Books");
     const commentsCollection = db.collection("Comments");
 
-    // ---------------- BOOKS ROUTES ----------------
 
-    // POST add new book (FIXED: This route is correct for the frontend's POST request)
+
+
     app.post('/books', async (req, res) => {
       const { title, author, genre, rating, summary, coverImage, userId } = req.body;
 
-      // Basic validation
+
       if (!title || !author || !userId) {
         return res.status(400).send({ message: 'Title, Author and userId required' });
       }
 
       try {
-        // Ensure rating is stored as a number
+
         const numericRating = Number(rating);
 
         const newBook = {
@@ -61,14 +61,14 @@ async function run() {
         };
 
         const result = await booksCollection.insertOne(newBook);
-        res.status(201).send({ message: 'Book added successfully', id: result.insertedId }); // 201 Created status
+        res.status(201).send({ message: 'Book added successfully', id: result.insertedId });
       } catch (err) {
         console.error(err);
         res.status(500).send({ message: 'Failed to add book', error: err.message });
       }
     });
 
-    // GET all books
+
     app.get('/books', async (req, res) => {
       try {
         const books = await booksCollection.find().toArray();
@@ -79,11 +79,11 @@ async function run() {
       }
     });
 
-    // GET single book
+
     app.get('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
-        // Validate ObjectId format
+
         if (!ObjectId.isValid(id)) {
           return res.status(400).send({ message: 'Invalid Book ID format' });
         }
@@ -96,7 +96,7 @@ async function run() {
       }
     });
 
-    // GET books by userId (My Books)
+
     app.get('/my-books/:userId', async (req, res) => {
       const { userId } = req.params;
       try {
@@ -108,8 +108,7 @@ async function run() {
       }
     });
 
-    // PUT update book
-    // PUT update book
+
     app.put('/books/:id', async (req, res) => {
       const id = req.params.id;
       const updatedData = req.body;
@@ -131,7 +130,7 @@ async function run() {
       }
     });
 
-    // DELETE book
+
     app.delete('/books/:id', async (req, res) => {
       const id = req.params.id;
       try {
@@ -147,9 +146,9 @@ async function run() {
       }
     });
 
-    // ---------------- COMMENTS ROUTES ----------------
 
-    // GET all comments
+
+
     app.get('/comments', async (req, res) => {
       try {
         const comments = await commentsCollection.find().toArray();
@@ -160,7 +159,7 @@ async function run() {
       }
     });
 
-    // GET comments by bookId
+
     app.get('/comments/:bookId', async (req, res) => {
       const { bookId } = req.params;
       try {
@@ -175,7 +174,7 @@ async function run() {
       }
     });
 
-    // POST add a comment
+
     app.post('/comments', async (req, res) => {
       const { bookId, userName, photoURL, comment } = req.body;
       if (!bookId || !comment) {
@@ -199,13 +198,13 @@ async function run() {
     console.log("✅ API Routes are ready");
   } catch (err) {
     console.error("MongoDB Connection Error:", err);
-    // Exit process if connection fails to prevent server from running without db
+
     process.exit(1);
   }
 }
 run().catch(console.dir);
 
-// Root endpoint (Health Check)
+
 app.get('/', (req, res) => {
   res.send('Books Haven API Running ✅');
 });
